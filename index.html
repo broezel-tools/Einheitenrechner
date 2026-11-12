@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Einheiten umrechnen – Chemikant</title>
+<style>
+  :root {
+    --bg: #f5f2ea; --card: #fffdf8; --ink: #17181c; --muted: #6c6f76; --line: #dcd6c8;
+    --accent: #0d6e68; --accent-ink: #ffffff; --ok: #1f8a4c; --no: #c2410c; --cover: #17181c;
+    --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121417; --card: #1b1e23; --ink: #ecebe5; --muted: #9a9ea6; --line: #2c3037;
+      --accent: #4cc2b6; --accent-ink: #06201d; --ok: #4ade80; --no: #fb923c; --cover: #0a0b0d;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); min-height: 100vh; line-height: 1.4;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 18px 56px; }
+
+  .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
+  h1 { font-family: var(--serif); font-size: 1.55rem; line-height: 1.1; margin: 0; letter-spacing: -.01em; }
+  #rank { font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 700; text-align: right; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .stats div { padding: 10px 0 8px; }
+  .stats b { display: block; font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; font-variant-numeric: lining-nums tabular-nums; }
+  .stats span { font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .goal { height: 3px; background: var(--line); }
+  .goal i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s ease; }
+  #toast { min-height: 1.6em; margin: 8px 0 4px; font-size: .9rem; font-weight: 600; color: var(--accent); }
+
+  .focus { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 20px; }
+  .focus label { display: flex; flex-direction: column; gap: 4px; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); flex: 1 1 200px; }
+  select { font: inherit; font-size: 1rem; letter-spacing: 0; text-transform: none; color: var(--ink); padding: 11px 12px; border-radius: 10px; border: 0; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .task { padding: 4px 0 20px; border-bottom: 1px solid var(--line); }
+  .tag { display: inline-block; font-size: .74rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+  .given { font-family: var(--serif); font-size: clamp(2.5rem, 12vw, 4.2rem); font-weight: 700; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: lining-nums tabular-nums; word-break: break-word; }
+  .given .u { font-weight: 400; color: var(--muted); }
+  .target { margin-top: 12px; font-size: 1.15rem; }
+  .target b { font-weight: 700; border-bottom: 2px solid var(--accent); }
+
+  .answer-wrap { margin-top: 20px; }
+  .answer-label { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  #answer { position: relative; display: block; width: 100%; min-height: 112px; padding: 18px 20px; border: 0; border-radius: 12px; text-align: left; cursor: pointer;
+    font: inherit; color: var(--ink); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; transition: box-shadow .2s; }
+  #answer.ok { box-shadow: inset 0 0 0 3px var(--ok); }
+  #answer.no { box-shadow: inset 0 0 0 3px var(--no); }
+  .res { display: block; font-family: var(--serif); font-size: clamp(1.8rem, 8vw, 2.6rem); font-weight: 700; font-variant-numeric: lining-nums tabular-nums; word-break: break-word; }
+  .res small { font-family: system-ui, sans-serif; font-size: .9rem; font-weight: 500; color: var(--muted); margin-left: 6px; }
+  .how { display: block; margin-top: 6px; color: var(--muted); font-size: .92rem; }
+  .cover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--cover); color: #9aa0a8; font-size: .95rem; letter-spacing: .04em; transition: opacity .18s ease; }
+  .cover::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(255,255,255,.04) 14px 28px); }
+  .cover span { position: relative; }
+  #answer.open .cover { opacity: 0; pointer-events: none; }
+
+  .rate { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .rate button { appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 600; padding: 13px 10px; border-radius: 10px; background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); }
+  #rOk:not(:disabled):hover, #rOk:not(:disabled):focus-visible { box-shadow: inset 0 0 0 2px var(--ok); color: var(--ok); }
+  #rNo:not(:disabled):hover, #rNo:not(:disabled):focus-visible { box-shadow: inset 0 0 0 2px var(--no); color: var(--no); }
+  .rate button:disabled { opacity: .35; cursor: not-allowed; }
+
+  .actions { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn { appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 600; padding: 14px 22px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); padding: 8px 12px; font-weight: 500; font-size: .9rem; }
+  .hint { color: var(--muted); font-size: .8rem; }
+  @media (hover: none) { .hint { display: none; } }
+
+  details { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 14px; }
+  details + details { margin-top: 14px; }
+  summary { cursor: pointer; font-weight: 600; font-size: .95rem; }
+  summary .count { color: var(--muted); font-weight: 400; }
+  .rankline { margin-top: 12px; }
+  .note { color: var(--muted); font-size: .85rem; margin: 6px 0; }
+  .pbar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .pbar.big { height: 8px; margin-top: 8px; }
+  .pbar i { display: block; height: 100%; background: var(--accent); }
+  .pbar i.low { background: var(--no); }
+  .prow { display: grid; grid-template-columns: 1fr 90px 48px; gap: 10px; align-items: center; font-size: .88rem; padding: 4px 0; }
+  .prow .n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
+  .chip { position: relative; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip span { display: inline-block; padding: 7px 12px; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; font-size: .88rem; background: var(--card); color: var(--muted); }
+  .chip input:checked + span { background: color-mix(in srgb, var(--accent) 14%, var(--card)); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 600; }
+  .chip input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .setrow { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  #empty { display: none; padding: 30px 0; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <h1>Einheiten umrechnen</h1>
+    <span id="rank"></span>
+  </header>
+  <div class="stats">
+    <div><b id="stStreak">0</b><span>Serie</span></div>
+    <div><b id="stToday">0/10</b><span>Heute</span></div>
+    <div><b id="stRate">–</b><span>Quote</span></div>
+    <div><b id="stDays">0</b><span>Tage</span></div>
+  </div>
+  <div class="goal"><i id="goalBar"></i></div>
+  <div id="toast" role="status"></div>
+
+  <div class="focus">
+    <label>Üben <select id="focusCat"></select></label>
+    <label id="focusUnitWrap">Einheit <select id="focusUnit"></select></label>
+  </div>
+
+  <section id="taskView">
+    <div class="task">
+      <span class="tag" id="tag"></span>
+      <div class="given" id="given"></div>
+      <div class="target" id="target"></div>
+    </div>
+
+    <div class="answer-wrap">
+      <div class="answer-label">Ergebnis</div>
+      <button type="button" id="answer" aria-pressed="false" aria-label="Ergebnis aufdecken oder verdecken">
+        <span class="res" id="res"></span>
+        <span class="how" id="how"></span>
+        <span class="cover"><span>Zum Aufdecken tippen</span></span>
+      </button>
+      <div class="rate">
+        <button type="button" id="rOk" disabled>Gewusst</button>
+        <button type="button" id="rNo" disabled>Nicht gewusst</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="empty">Keine Größe ausgewählt. Bitte unter „Einstellungen" mindestens eine Größe aktivieren.</div>
+
+  <div class="actions">
+    <button type="button" class="btn" id="next">Neue Aufgabe</button>
+    <span class="hint">Leertaste aufdecken · R gewusst · F nicht gewusst · N neu</span>
+  </div>
+
+  <details id="progress">
+    <summary>Mein Fortschritt</summary>
+    <div id="pbox"></div>
+    <div class="setrow">
+      <button type="button" class="btn ghost" id="exp">Exportieren</button>
+      <button type="button" class="btn ghost" id="imp">Importieren</button>
+      <button type="button" class="btn ghost" id="reset">Zurücksetzen</button>
+    </div>
+    <input type="file" id="impFile" accept="application/json,.json" hidden>
+  </details>
+
+  <details id="settings">
+    <summary>Einstellungen <span class="count" id="count"></span></summary>
+    <div class="chips" id="chips"></div>
+    <div class="setrow">
+      <button type="button" class="btn ghost" id="selAll">Alle</button>
+      <button type="button" class="btn ghost" id="selNone">Keine</button>
+    </div>
+  </details>
+</main>
+
+<script>
+"use strict";
+
+/* ---------- Einheitenkatalog ----------
+   Jede Größe hat eine Basiseinheit; Faktoren sind exakte Dezimalbrüche (Text),
+   z. B. "1e-3", "3.6e6". Zusammengesetzte Einheiten (num/den) werden aus allen
+   Zähler-/Nenner-Kombinationen erzeugt. Temperatur hat zusätzlich einen Offset. */
+const TIME = [["d","86400"],["h","3600"],["min","60"],["s","1"]];
+const VOL = [["m³","1"],["dm³","0.001"],["L","0.001"],["cm³","1e-6"],["mL","1e-6"]];
+const VOL3 = [["m³","1"],["L","0.001"],["mL","1e-6"]];
+const CATS = [
+  { id: "masse", name: "Masse", units: [["t","1000"],["kg","1"],["g","1e-3"],["mg","1e-6"],["µg","1e-9"]] },
+  { id: "laenge", name: "Länge", units: [["km","1000"],["m","1"],["dm","0.1"],["cm","0.01"],["mm","0.001"],["µm","1e-6"]] },
+  { id: "flaeche", name: "Fläche", units: [["km²","1e6"],["m²","1"],["dm²","0.01"],["cm²","1e-4"],["mm²","1e-6"]] },
+  { id: "volumen", name: "Volumen", units: [["m³","1"],["hL","0.1"],["L","0.001"],["dm³","0.001"],["mL","1e-6"],["cm³","1e-6"],["µL","1e-9"],["mm³","1e-9"]] },
+  { id: "zeit", name: "Zeit", units: [["d","86400"],["h","3600"],["min","60"],["s","1"],["ms","0.001"]] },
+  { id: "temperatur", name: "Temperatur", special: "temp", units: [["°C","1","273.15"],["K","1","0"]] },
+  { id: "druck", name: "Druck", units: [["MPa","1e6"],["bar","1e5"],["kPa","1e3"],["hPa","100"],["mbar","100"],["Pa","1"]] },
+  { id: "dichte", name: "Dichte", num: [["t","1000"],["kg","1"],["g","1e-3"]], den: VOL },
+  { id: "massenkonz", name: "Massenkonzentration", num: [["kg","1"],["g","1e-3"],["mg","1e-6"],["µg","1e-9"]], den: VOL3 },
+  { id: "stoffmenge", name: "Stoffmenge", units: [["kmol","1000"],["mol","1"],["mmol","1e-3"],["µmol","1e-6"]] },
+  { id: "stoffkonz", name: "Stoffmengenkonzentration", num: [["kmol","1000"],["mol","1"],["mmol","1e-3"],["µmol","1e-6"]], den: VOL3 },
+  { id: "molmasse", name: "Molare Masse", num: [["kg","1"],["g","1e-3"],["mg","1e-6"]], den: [["kmol","1000"],["mol","1"],["mmol","1e-3"]] },
+  { id: "anteil", name: "Massenanteil", units: [["%","1e-2"],["‰","1e-3"],["g/kg","1e-3"],["ppm","1e-6"],["mg/kg","1e-6"],["ppb","1e-9"]] },
+  { id: "volstrom", name: "Volumenstrom", num: VOL, den: TIME },
+  { id: "massenstrom", name: "Massenstrom", num: [["t","1000"],["kg","1"],["g","1e-3"],["mg","1e-6"]], den: TIME },
+  { id: "geschw", name: "Strömungsgeschwindigkeit", num: [["km","1000"],["m","1"],["cm","0.01"],["mm","0.001"]], den: [["h","3600"],["min","60"],["s","1"]] },
+  { id: "viskkin", name: "Kinematische Viskosität", units: [["m²/s","1"],["cm²/s","1e-4"],["mm²/s","1e-6"],["cSt","1e-6"]] },
+  { id: "energie", name: "Energie", units: [["MJ","1e6"],["kWh","3.6e6"],["kJ","1e3"],["kcal","4184"],["Wh","3600"],["J","1"],["cal","4.184"]] },
+  { id: "leistung", name: "Leistung", units: [["MW","1e6"],["kW","1e3"],["W","1"],["mW","1e-3"]] },
+  { id: "spannung", name: "Elektr. Spannung", units: [["kV","1e3"],["V","1"],["mV","1e-3"]] },
+  { id: "strom", name: "Elektr. Stromstärke", units: [["kA","1e3"],["A","1"],["mA","1e-3"],["µA","1e-6"]] },
+  { id: "widerstand", name: "Elektr. Widerstand", units: [["MΩ","1e6"],["kΩ","1e3"],["Ω","1"],["mΩ","1e-3"]] }
+];
+
+/* ---------- Exakte Bruchrechnung mit BigInt ---------- */
+const gcd = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) { [a, b] = [b, a % b]; } return a; };
+function rat(n, d = 1n) {
+  if (d < 0n) { n = -n; d = -d; }
+  const g = gcd(n, d) || 1n;
+  return [n / g, d / g];
+}
+const rmul = (x, y) => rat(x[0] * y[0], x[1] * y[1]);
+const rdiv = (x, y) => rat(x[0] * y[1], x[1] * y[0]);
+const radd = (x, y) => rat(x[0] * y[1] + y[0] * x[1], x[1] * y[1]);
+const rsub = (x, y) => rat(x[0] * y[1] - y[0] * x[1], x[1] * y[1]);
+
+function parseDec(s) {
+  const m = /^(-?)(\d*)(?:\.(\d+))?(?:e(-?\d+))?$/i.exec(s.trim());
+  if (!m) throw new Error("Zahl nicht lesbar: " + s);
+  const frac = m[3] || "";
+  let exp = (m[4] ? parseInt(m[4], 10) : 0) - frac.length;
+  let n = BigInt((m[1] || "") + ((m[2] || "") + frac || "0"));
+  if (exp >= 0) return rat(n * 10n ** BigInt(exp));
+  return rat(n, 10n ** BigInt(-exp));
+}
+function parseFactor(s) {
+  const parts = s.split("/");
+  let r = parseDec(parts[0]);
+  for (let i = 1; i < parts.length; i++) r = rdiv(r, parseDec(parts[i]));
+  return r;
+}
+
+/* Einheiten vorbereiten */
+for (const c of CATS) {
+  if (c.num) {
+    c.u = [];
+    for (const [ns, nf] of c.num) {
+      for (const [ds, df] of c.den) {
+        const n = { sym: ns, f: parseFactor(nf) }, d = { sym: ds, f: parseFactor(df) };
+        c.u.push({ sym: ns + "/" + ds, f: rdiv(n.f, d.f), off: rat(0n), n, d });
+      }
+    }
+  } else {
+    c.u = c.units.map(([sym, f, off]) => ({ sym, f: parseFactor(f), off: off ? parseDec(off) : rat(0n) }));
+  }
+}
+
+/* ---------- Zahlenformat (deutsch) ---------- */
+const GROUP = " ";
+function groupInt(s) {
+  return s.length >= 5 ? s.replace(/\B(?=(\d{3})+(?!\d))/g, GROUP) : s;
+}
+function fmtRat(r) {
+  let [n, d] = r;
+  const neg = n < 0n;
+  if (neg) n = -n;
+  let d2 = d, k2 = 0, k5 = 0;
+  while (d2 % 2n === 0n) { d2 /= 2n; k2++; }
+  while (d2 % 5n === 0n) { d2 /= 5n; k5++; }
+  let int, frac = "", exact = true;
+  if (d2 === 1n) {
+    const k = Math.max(k2, k5);
+    const scaled = ((n * 10n ** BigInt(k)) / d).toString().padStart(k + 1, "0");
+    int = k ? scaled.slice(0, -k) : scaled;
+    frac = k ? scaled.slice(-k).replace(/0+$/, "") : "";
+  } else {
+    exact = false;
+    const x = Number(n) / Number(d);
+    const p = Number(x.toPrecision(4));
+    const digits = Math.max(0, 3 - Math.floor(Math.log10(Math.abs(p))));
+    const s = p.toFixed(Math.min(digits, 20)).replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+    [int, frac = ""] = s.split(".");
+  }
+  const isZero = /^0*$/.test(int) && frac === "";
+  return { text: (neg && !isZero ? "−" : "") + groupInt(int) + (frac ? "," + frac : ""), exact };
+}
+
+const mulText = (r) =>
+  r[1] === 1n ? "× " + fmtRat(r).text
+  : r[0] === 1n ? "÷ " + groupInt(r[1].toString())
+  : "× " + groupInt(r[0].toString()) + "/" + groupInt(r[1].toString());
+
+/* ---------- Aufgabenlogik ---------- */
+const log10Ratio = (r) => Math.abs(Math.log10(Number(r[0])) - Math.log10(Number(r[1])));
+
+function pairsFor(cat) {
+  const out = [];
+  for (let i = 0; i < cat.u.length; i++) {
+    for (let j = 0; j < cat.u.length; j++) {
+      if (i === j) continue;
+      const ratio = rdiv(cat.u[i].f, cat.u[j].f);
+      if (log10Ratio(ratio) > 9) continue;
+      out.push([i, j]);
+    }
+  }
+  return out;
+}
+
+const rnd = (n) => Math.floor(Math.random() * n);
+function randomValue(cat, fromIdx) {
+  if (cat.special === "temp") {
+    const celsius = cat.u[fromIdx].sym === "°C";
+    const v = celsius ? rnd(341) - 40 : 230 + rnd(371);
+    return rat(BigInt(v * 2 + (rnd(4) === 0 ? 1 : 0)), 2n);
+  }
+  const digits = BigInt(1 + rnd(999));
+  const dec = [0, 0, 0, 1, 1, 2][rnd(6)];
+  return rat(digits, 10n ** BigInt(dec));
+}
+
+function makeTask(cat, prevKey, unit) {
+  let pairs = pairsFor(cat);
+  if (unit) pairs = pairs.filter(([i, j]) => cat.u[i].sym === unit || cat.u[j].sym === unit);
+  if (!pairs.length) return null;
+  for (let tries = 0; tries < 20; tries++) {
+    const [i, j] = pairs[rnd(pairs.length)];
+    const a = cat.u[i], b = cat.u[j];
+    const v = randomValue(cat, i);
+    let res, how;
+    if (cat.special === "temp") {
+      const base = radd(rmul(v, a.f), a.off);
+      res = rdiv(rsub(base, b.off), b.f);
+      how = a.sym === "°C" ? "+ 273,15" : "− 273,15";
+    } else {
+      const ratio = rdiv(a.f, b.f);
+      res = rmul(v, ratio);
+      how = mulText(ratio);
+      if (a.n) {
+        const parts = [];
+        if (a.n.sym !== b.n.sym) parts.push("Zähler " + a.n.sym + " → " + b.n.sym + ": " + mulText(rdiv(a.n.f, b.n.f)));
+        if (a.d.sym !== b.d.sym) parts.push("Nenner " + a.d.sym + " → " + b.d.sym + ": " + mulText(rdiv(b.d.f, a.d.f)));
+        if (parts.length > 1) parts.push("gesamt: " + how);
+        how = parts.join(" · ");
+      }
+    }
+    const key = cat.id + a.sym + b.sym + v.join("/");
+    if (key === prevKey && tries < 19) continue;
+    return { cat, from: a.sym, to: b.sym, value: fmtRat(v).text, result: fmtRat(res), how, key };
+  }
+  return null;
+}
+
+/* ---------- UI ---------- */
+const $ = (id) => document.getElementById(id);
+const STORE = "einheiten-trainer-v1";
+const STATS = "einheiten-trainer-stats-v1";
+const GOAL = 10;
+const RANKS = [[0, "Neu im Betrieb"], [25, "Probenehmer"], [75, "Anlagenfahrer"], [150, "Schichtführer"], [300, "Meister"], [600, "Betriebsleiter"]];
+const state = { focusCat: "", focusUnit: "", active: new Set(CATS.map((c) => c.id)), prevKey: "", current: null, rated: false, timer: 0, toastTimer: 0, resetTimer: 0 };
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+/* --- Einstellungen --- */
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE) || "null");
+    if (s && Array.isArray(s.active)) state.active = new Set(s.active.filter((id) => CATS.some((c) => c.id === id)));
+    if (s && s.focusCat === "__weak") state.focusCat = "__weak";
+    const fc = s && CATS.find((c) => c.id === s.focusCat);
+    if (fc) { state.focusCat = fc.id; if (fc.u.some((u) => u.sym === s.focusUnit)) state.focusUnit = s.focusUnit; }
+  } catch (e) { /* Speicher nicht verfügbar: Standardwerte */ }
+}
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify({ active: [...state.active], focusCat: state.focusCat, focusUnit: state.focusUnit })); } catch (e) { /* ignorieren */ }
+}
+
+/* --- Fortschritt --- */
+const emptyStats = () => ({ right: 0, wrong: 0, streak: 0, best: 0, cat: {}, days: {} });
+let stats = emptyStats();
+
+function normStats(s) {
+  if (!s || typeof s !== "object") return null;
+  const n = emptyStats();
+  n.right = Math.max(0, +s.right || 0); n.wrong = Math.max(0, +s.wrong || 0);
+  n.streak = Math.max(0, +s.streak || 0); n.best = Math.max(0, +s.best || 0);
+  for (const [k, v] of Object.entries(s.cat || {})) if (v && CATS.some((c) => c.id === k)) n.cat[k] = { r: Math.max(0, +v.r || 0), w: Math.max(0, +v.w || 0) };
+  for (const [k, v] of Object.entries(s.days || {})) if (/^\d{4}-\d\d-\d\d$/.test(k)) n.days[k] = Math.max(0, +v || 0);
+  return n;
+}
+function loadStats() {
+  try { const n = normStats(JSON.parse(localStorage.getItem(STATS) || "null")); if (n) stats = n; } catch (e) { /* leer starten */ }
+}
+function saveStats() {
+  const keys = Object.keys(stats.days).sort();
+  while (keys.length > 120) delete stats.days[keys.shift()];
+  try { localStorage.setItem(STATS, JSON.stringify(stats)); } catch (e) { /* ignorieren */ }
+}
+const dayKey = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const todayCount = () => stats.days[dayKey(new Date())] || 0;
+function dayStreak() {
+  const d = new Date();
+  if (!(stats.days[dayKey(d)] > 0)) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (stats.days[dayKey(d)] > 0) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function rankIdx(n) { let i = 0; RANKS.forEach((r, k) => { if (n >= r[0]) i = k; }); return i; }
+const acc = (c) => { const s = stats.cat[c.id]; return s.r / (s.r + s.w); };
+
+function renderStats() {
+  const t = todayCount(), tot = stats.right + stats.wrong, ri = rankIdx(stats.right);
+  $("stStreak").textContent = stats.streak;
+  $("stToday").textContent = t + "/" + GOAL;
+  $("stRate").textContent = tot ? Math.round((100 * stats.right) / tot) + " %" : "–";
+  $("stDays").textContent = dayStreak();
+  $("goalBar").style.width = Math.min(100, (t / GOAL) * 100) + "%";
+  $("rank").textContent = RANKS[ri][1];
+  renderProgress(ri);
+}
+
+function renderProgress(ri) {
+  const box = $("pbox"), cur = RANKS[ri], next = RANKS[ri + 1];
+  box.textContent = "";
+  const head = el("div", "rankline");
+  head.append(el("b", null, cur[1]), el("span", null, " · " + stats.right + " richtig" + (stats.best ? " · beste Serie " + stats.best : "")));
+  const bar = el("div", "pbar big"), fill = el("i");
+  fill.style.width = next ? Math.round((100 * (stats.right - cur[0])) / (next[0] - cur[0])) + "%" : "100%";
+  bar.append(fill);
+  box.append(head, bar, el("div", "note", next ? "Noch " + (next[0] - stats.right) + " richtige Aufgaben bis „" + next[1] + "“" : "Höchster Rang erreicht"));
+  const rows = CATS.filter((c) => stats.cat[c.id] && stats.cat[c.id].r + stats.cat[c.id].w > 0)
+    .sort((a, b) => acc(a) - acc(b) || (stats.cat[b.id].r + stats.cat[b.id].w) - (stats.cat[a.id].r + stats.cat[a.id].w));
+  if (!rows.length) { box.append(el("div", "note", "Noch keine bewerteten Aufgaben. Decke das Ergebnis auf und bewerte, ob du es gewusst hast.")); return; }
+  box.append(el("div", "note", "Trefferquote je Größe, schwächste zuerst"));
+  for (const c of rows) {
+    const s = stats.cat[c.id], a = acc(c), row = el("div", "prow");
+    const pb = el("div", "pbar"), f = el("i", a < 0.6 ? "low" : "");
+    f.style.width = Math.round(a * 100) + "%";
+    pb.append(f);
+    row.append(el("span", null, c.name), pb, el("span", "n", s.r + "/" + (s.r + s.w)));
+    box.append(row);
+  }
+}
+
+function toast(msg) {
+  $("toast").textContent = msg;
+  clearTimeout(state.toastTimer);
+  state.toastTimer = setTimeout(() => { $("toast").textContent = ""; }, 3200);
+}
+
+function rate(ok) {
+  if ($("rOk").disabled) return;
+  const id = state.current.id, rankBefore = rankIdx(stats.right);
+  const cs = stats.cat[id] || (stats.cat[id] = { r: 0, w: 0 });
+  if (ok) { stats.right++; cs.r++; stats.streak++; stats.best = Math.max(stats.best, stats.streak); }
+  else { stats.wrong++; cs.w++; stats.streak = 0; }
+  const k = dayKey(new Date());
+  stats.days[k] = (stats.days[k] || 0) + 1;
+  state.rated = true;
+  saveStats(); renderStats();
+  $("answer").classList.add(ok ? "ok" : "no");
+  syncRate();
+  const rankAfter = rankIdx(stats.right);
+  if (rankAfter > rankBefore) toast("Neuer Rang: " + RANKS[rankAfter][1]);
+  else if (stats.days[k] === GOAL) toast("Tagesziel erreicht: " + GOAL + " Aufgaben heute");
+  else if (ok && stats.streak % 5 === 0) toast(stats.streak + " richtig in Folge");
+  state.timer = setTimeout(newTask, 650);
+}
+
+/* --- Aufgaben --- */
+function usableCats() { return CATS.filter((c) => state.active.has(c.id)); }
+
+function weightedPick(cats) {
+  const w = cats.map((c) => { const s = stats.cat[c.id] || { r: 0, w: 0 }; return Math.pow((s.w + 1) / (s.r + s.w + 2), 2); });
+  let x = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < cats.length; i++) { x -= w[i]; if (x <= 0) return cats[i]; }
+  return cats[cats.length - 1];
+}
+
+function renderChips() {
+  const box = $("chips");
+  box.textContent = "";
+  for (const c of CATS) {
+    const label = el("label", "chip"), input = el("input");
+    input.type = "checkbox"; input.value = c.id; input.checked = state.active.has(c.id);
+    input.addEventListener("change", () => {
+      if (input.checked) state.active.add(c.id); else state.active.delete(c.id);
+      save(); updateCount(); newTask();
+    });
+    label.append(input, el("span", null, c.name));
+    box.append(label);
+  }
+  updateCount();
+}
+function updateCount() { $("count").textContent = "(" + usableCats().length + " von " + CATS.length + " Größen)"; }
+
+function renderFocus() {
+  const cs = $("focusCat"), us = $("focusUnit");
+  cs.textContent = "";
+  cs.append(new Option("Alle Größen gemischt", ""), new Option("Meine Schwächen", "__weak"));
+  for (const c of CATS) cs.append(new Option(c.name, c.id));
+  cs.value = state.focusCat;
+  const cat = CATS.find((c) => c.id === state.focusCat);
+  $("focusUnitWrap").style.display = cat ? "" : "none";
+  us.textContent = "";
+  if (cat) {
+    us.append(new Option("Alle Einheiten", ""));
+    for (const u of cat.u) us.append(new Option(u.sym, u.sym));
+    us.value = state.focusUnit;
+  }
+}
+
+function syncRate() {
+  const can = !!state.current && !state.rated && $("answer").classList.contains("open");
+  $("rOk").disabled = $("rNo").disabled = !can;
+}
+function setOpen(open) {
+  const a = $("answer");
+  a.classList.toggle("open", open);
+  a.setAttribute("aria-pressed", String(open));
+  syncRate();
+}
+
+function newTask() {
+  clearTimeout(state.timer);
+  const focus = CATS.find((c) => c.id === state.focusCat);
+  const cats = focus ? [focus] : usableCats();
+  const view = $("taskView");
+  if (!cats.length) {
+    view.style.display = "none"; $("empty").style.display = "block"; $("next").disabled = true;
+    state.current = null;
+    return;
+  }
+  view.style.display = ""; $("empty").style.display = "none"; $("next").disabled = false;
+  const cat = state.focusCat === "__weak" ? weightedPick(cats) : cats[rnd(cats.length)];
+  const t = makeTask(cat, state.prevKey, focus ? state.focusUnit : "");
+  if (!t) return;
+  state.prevKey = t.key;
+  $("tag").textContent = t.cat.name;
+  $("given").textContent = "";
+  const u = el("span", "u", t.from);
+  $("given").append(document.createTextNode(t.value + " "), u);
+  $("target").textContent = "";
+  $("target").append("Rechne um in ", el("b", null, t.to));
+  $("res").textContent = "";
+  $("res").append((t.result.exact ? "" : "≈ ") + t.result.text, el("small", null, t.to));
+  $("how").textContent = "Rechenschritt: " + t.how + (t.result.exact ? "" : " (gerundet auf 4 gültige Stellen)");
+  state.current = t.cat;
+  state.rated = false;
+  $("answer").classList.remove("ok", "no");
+  setOpen(false);
+}
+
+/* --- Start --- */
+function init() {
+  load();
+  loadStats();
+  $("answer").addEventListener("click", () => setOpen(!$("answer").classList.contains("open")));
+  $("next").addEventListener("click", newTask);
+  $("rOk").addEventListener("click", () => rate(true));
+  $("rNo").addEventListener("click", () => rate(false));
+  $("selAll").addEventListener("click", () => { CATS.forEach((c) => state.active.add(c.id)); save(); renderChips(); newTask(); });
+  $("selNone").addEventListener("click", () => { state.active.clear(); save(); renderChips(); newTask(); });
+  $("focusCat").addEventListener("change", (e) => { state.focusCat = e.target.value; state.focusUnit = ""; save(); renderFocus(); newTask(); });
+  $("focusUnit").addEventListener("change", (e) => { state.focusUnit = e.target.value; save(); newTask(); });
+
+  $("exp").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({ app: "einheiten-trainer", version: 1, stats }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = "einheiten-fortschritt.json";
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  $("imp").addEventListener("click", () => $("impFile").click());
+  $("impFile").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      let n = null;
+      try { n = normStats(JSON.parse(r.result).stats); } catch (err) { /* ungültig */ }
+      if (!n) { toast("Datei nicht lesbar."); return; }
+      stats = n; saveStats(); renderStats(); toast("Fortschritt geladen.");
+    };
+    r.readAsText(f);
+    e.target.value = "";
+  });
+  $("reset").addEventListener("click", () => {
+    const b = $("reset");
+    if (b.dataset.armed) {
+      clearTimeout(state.resetTimer); delete b.dataset.armed; b.textContent = "Zurücksetzen";
+      stats = emptyStats(); saveStats(); renderStats(); toast("Fortschritt gelöscht.");
+    } else {
+      b.dataset.armed = "1"; b.textContent = "Wirklich löschen?";
+      state.resetTimer = setTimeout(() => { delete b.dataset.armed; b.textContent = "Zurücksetzen"; }, 4000);
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    const k = e.key.toLowerCase();
+    if (k === "n") newTask();
+    else if (k === "r") rate(true);
+    else if (k === "f") rate(false);
+    else if ((k === " " || k === "enter") && document.activeElement === document.body && state.current) {
+      e.preventDefault();
+      setOpen(!$("answer").classList.contains("open"));
+    }
+  });
+
+  renderFocus();
+  renderChips();
+  renderStats();
+  newTask();
+}
+init();
+</script>
+</body>
+</html>
