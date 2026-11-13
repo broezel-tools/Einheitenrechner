@@ -27,7 +27,7 @@
   h1 { font-family: var(--serif); font-size: 1.55rem; line-height: 1.1; margin: 0; letter-spacing: -.01em; }
   #rank { font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 700; text-align: right; }
 
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .stats { display: flex; justify-content: space-between; gap: 12px; }
   .stats div { padding: 10px 0 8px; }
   .stats b { display: block; font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; font-variant-numeric: lining-nums tabular-nums; }
   .stats span { font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -61,12 +61,6 @@
   .cover span { position: relative; }
   #answer.open .cover { opacity: 0; pointer-events: none; }
 
-  .rate { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-  .rate button { appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 600; padding: 13px 10px; border-radius: 10px; background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); }
-  #rOk:not(:disabled):hover, #rOk:not(:disabled):focus-visible { box-shadow: inset 0 0 0 2px var(--ok); color: var(--ok); }
-  #rNo:not(:disabled):hover, #rNo:not(:disabled):focus-visible { box-shadow: inset 0 0 0 2px var(--no); color: var(--no); }
-  .rate button:disabled { opacity: .35; cursor: not-allowed; }
-
   .actions { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
   .btn { appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 600; padding: 14px 22px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); }
   .btn:hover { filter: brightness(1.08); }
@@ -94,6 +88,27 @@
   .chip input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
   .setrow { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
   #empty { display: none; padding: 30px 0; color: var(--muted); }
+  .tabs { display: flex; margin: 12px 0 8px; border-bottom: 1px solid var(--line); }
+  .tabs button { appearance: none; border: 0; background: none; font: inherit; font-weight: 600; color: var(--muted); padding: 10px 14px 9px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+  .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); }
+  .inwrap { display: flex; align-items: center; gap: 10px; }
+  input.num { flex: 1; min-width: 0; font-family: var(--serif); font-size: 1.5rem; font-weight: 700; padding: 11px 14px; border-radius: 10px; border: 0; background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); font-variant-numeric: lining-nums tabular-nums; }
+  input.num:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+  input.num:disabled { opacity: 1; color: var(--muted); -webkit-text-fill-color: var(--muted); }
+  .inunit { font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .inhint { min-height: 1.3em; font-size: .8rem; color: var(--no); margin: 4px 0 0; }
+  .answer-label.sp { margin-top: 10px; }
+  #answer:disabled { cursor: not-allowed; }
+  #answer.open { cursor: default; }
+  .verdict { display: block; font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+  #answer.ok .verdict { color: var(--ok); }
+  #answer.no .verdict { color: var(--no); }
+  .fld { display: flex; flex-direction: column; gap: 4px; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .fld select { width: 100%; }
+  .calcgrid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: end; margin: 14px 0 0; }
+  #cSwap { appearance: none; border: 0; cursor: pointer; font-size: 1.2rem; padding: 10px 12px; border-radius: 10px; background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .calcout { margin-top: 20px; padding: 18px 20px; border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); min-height: 110px; }
+  .calcout .eq { color: var(--muted); font-size: .95rem; min-height: 1.3em; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -103,67 +118,95 @@
     <h1>Einheiten umrechnen</h1>
     <span id="rank"></span>
   </header>
-  <div class="stats">
-    <div><b id="stStreak">0</b><span>Serie</span></div>
-    <div><b id="stToday">0/10</b><span>Heute</span></div>
-    <div><b id="stRate">–</b><span>Quote</span></div>
-    <div><b id="stDays">0</b><span>Tage</span></div>
-  </div>
-  <div class="goal"><i id="goalBar"></i></div>
-  <div id="toast" role="status"></div>
+  <nav class="tabs" aria-label="Bereich">
+    <button type="button" id="tabPractice" class="on" aria-pressed="true">Aufgaben</button>
+    <button type="button" id="tabCalc" aria-pressed="false">Eigene Zahl</button>
+  </nav>
 
-  <div class="focus">
-    <label>Üben <select id="focusCat"></select></label>
-    <label id="focusUnitWrap">Einheit <select id="focusUnit"></select></label>
-  </div>
+  <div id="practice">
+    <div class="stats">
+      <div><b id="stStreak">0</b><span>Serie</span></div>
+      <div><b id="stToday">0/10</b><span>Heute</span></div>
+      <div><b id="stRate">–</b><span>Quote</span></div>
+      <div><b id="stDays">0</b><span>Tage</span></div>
+    </div>
+    <div class="goal"><i id="goalBar"></i></div>
+    <div id="toast" role="status"></div>
 
-  <section id="taskView">
-    <div class="task">
-      <span class="tag" id="tag"></span>
-      <div class="given" id="given"></div>
-      <div class="target" id="target"></div>
+    <div class="focus">
+      <label>Üben <select id="focusCat"></select></label>
+      <label id="focusUnitWrap">Einheit <select id="focusUnit"></select></label>
     </div>
 
-    <div class="answer-wrap">
-      <div class="answer-label">Ergebnis</div>
-      <button type="button" id="answer" aria-pressed="false" aria-label="Ergebnis aufdecken oder verdecken">
-        <span class="res" id="res"></span>
-        <span class="how" id="how"></span>
-        <span class="cover"><span>Zum Aufdecken tippen</span></span>
-      </button>
-      <div class="rate">
-        <button type="button" id="rOk" disabled>Gewusst</button>
-        <button type="button" id="rNo" disabled>Nicht gewusst</button>
+    <section id="taskView">
+      <div class="task">
+        <span class="tag" id="tag"></span>
+        <div class="given" id="given"></div>
+        <div class="target" id="target"></div>
       </div>
+
+      <div class="answer-wrap">
+        <label class="answer-label" for="inp">Deine Antwort</label>
+        <div class="inwrap">
+          <input class="num" id="inp" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Zahl eingeben">
+          <span class="inunit" id="inUnit"></span>
+        </div>
+        <div class="inhint" id="inHint"></div>
+        <div class="answer-label sp">Lösung</div>
+        <button type="button" id="answer" disabled aria-label="Lösung aufdecken">
+          <span class="verdict" id="verdict"></span>
+          <span class="res" id="res"></span>
+          <span class="how" id="how"></span>
+          <span class="cover"><span id="coverTxt">Erst deine Antwort eingeben</span></span>
+        </button>
+      </div>
+    </section>
+
+    <div id="empty">Keine Größe ausgewählt. Bitte unter „Einstellungen" mindestens eine Größe aktivieren.</div>
+
+    <div class="actions">
+      <button type="button" class="btn" id="next">Neue Aufgabe</button>
+      <span class="hint">Enter = prüfen, danach Enter = weiter · N = überspringen</span>
     </div>
-  </section>
 
-  <div id="empty">Keine Größe ausgewählt. Bitte unter „Einstellungen" mindestens eine Größe aktivieren.</div>
+    <details id="progress">
+      <summary>Mein Fortschritt</summary>
+      <div id="pbox"></div>
+      <div class="setrow">
+        <button type="button" class="btn ghost" id="exp">Exportieren</button>
+        <button type="button" class="btn ghost" id="imp">Importieren</button>
+        <button type="button" class="btn ghost" id="reset">Zurücksetzen</button>
+      </div>
+      <input type="file" id="impFile" accept="application/json,.json" hidden>
+    </details>
 
-  <div class="actions">
-    <button type="button" class="btn" id="next">Neue Aufgabe</button>
-    <span class="hint">Leertaste aufdecken · R gewusst · F nicht gewusst · N neu</span>
+    <details id="settings">
+      <summary>Einstellungen <span class="count" id="count"></span></summary>
+      <div class="chips" id="chips"></div>
+      <div class="setrow">
+        <button type="button" class="btn ghost" id="selAll">Alle</button>
+        <button type="button" class="btn ghost" id="selNone">Keine</button>
+      </div>
+    </details>
   </div>
 
-  <details id="progress">
-    <summary>Mein Fortschritt</summary>
-    <div id="pbox"></div>
-    <div class="setrow">
-      <button type="button" class="btn ghost" id="exp">Exportieren</button>
-      <button type="button" class="btn ghost" id="imp">Importieren</button>
-      <button type="button" class="btn ghost" id="reset">Zurücksetzen</button>
+  <div id="calc" hidden>
+    <div class="focus" style="margin-top:14px">
+      <label>Größe <select id="cCat"></select></label>
     </div>
-    <input type="file" id="impFile" accept="application/json,.json" hidden>
-  </details>
-
-  <details id="settings">
-    <summary>Einstellungen <span class="count" id="count"></span></summary>
-    <div class="chips" id="chips"></div>
-    <div class="setrow">
-      <button type="button" class="btn ghost" id="selAll">Alle</button>
-      <button type="button" class="btn ghost" id="selNone">Keine</button>
+    <label class="fld" for="cNum">Zahl</label>
+    <input class="num" id="cNum" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Zahl eingeben" style="width:100%">
+    <div class="calcgrid">
+      <label class="fld">Von <select id="cFrom"></select></label>
+      <button type="button" id="cSwap" aria-label="Einheiten tauschen">⇄</button>
+      <label class="fld">In <select id="cTo"></select></label>
     </div>
-  </details>
+    <div class="calcout" aria-live="polite">
+      <div class="eq" id="cEq"></div>
+      <div class="res" id="cRes">–</div>
+      <div class="how" id="cHow"></div>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -193,7 +236,6 @@ const CATS = [
   { id: "volstrom", name: "Volumenstrom", num: VOL, den: TIME },
   { id: "massenstrom", name: "Massenstrom", num: [["t","1000"],["kg","1"],["g","1e-3"],["mg","1e-6"]], den: TIME },
   { id: "geschw", name: "Strömungsgeschwindigkeit", num: [["km","1000"],["m","1"],["cm","0.01"],["mm","0.001"]], den: [["h","3600"],["min","60"],["s","1"]] },
-  { id: "viskkin", name: "Kinematische Viskosität", units: [["m²/s","1"],["cm²/s","1e-4"],["mm²/s","1e-6"],["cSt","1e-6"]] },
   { id: "energie", name: "Energie", units: [["MJ","1e6"],["kWh","3.6e6"],["kJ","1e3"],["kcal","4184"],["Wh","3600"],["J","1"],["cal","4.184"]] },
   { id: "leistung", name: "Leistung", units: [["MW","1e6"],["kW","1e3"],["W","1"],["mW","1e-3"]] },
   { id: "spannung", name: "Elektr. Spannung", units: [["kV","1e3"],["V","1"],["mV","1e-3"]] },
@@ -307,6 +349,28 @@ function randomValue(cat, fromIdx) {
   return rat(digits, 10n ** BigInt(dec));
 }
 
+function convertValue(cat, a, b, v) {
+  if (a === b) return { res: v, how: "× 1" };
+  let res, how;
+  if (cat.special === "temp") {
+    const base = radd(rmul(v, a.f), a.off);
+    res = rdiv(rsub(base, b.off), b.f);
+    how = a.sym === "°C" ? "+ 273,15" : "− 273,15";
+  } else {
+    const ratio = rdiv(a.f, b.f);
+    res = rmul(v, ratio);
+    how = mulText(ratio);
+    if (a.n) {
+      const parts = [];
+      if (a.n.sym !== b.n.sym) parts.push("Zähler " + a.n.sym + " → " + b.n.sym + ": " + mulText(rdiv(a.n.f, b.n.f)));
+      if (a.d.sym !== b.d.sym) parts.push("Nenner " + a.d.sym + " → " + b.d.sym + ": " + mulText(rdiv(b.d.f, a.d.f)));
+      if (parts.length > 1) parts.push("gesamt: " + how);
+      how = parts.join(" · ");
+    }
+  }
+  return { res, how };
+}
+
 function makeTask(cat, prevKey, unit) {
   let pairs = pairsFor(cat);
   if (unit) pairs = pairs.filter(([i, j]) => cat.u[i].sym === unit || cat.u[j].sym === unit);
@@ -315,26 +379,10 @@ function makeTask(cat, prevKey, unit) {
     const [i, j] = pairs[rnd(pairs.length)];
     const a = cat.u[i], b = cat.u[j];
     const v = randomValue(cat, i);
-    let res, how;
-    if (cat.special === "temp") {
-      const base = radd(rmul(v, a.f), a.off);
-      res = rdiv(rsub(base, b.off), b.f);
-      how = a.sym === "°C" ? "+ 273,15" : "− 273,15";
-    } else {
-      const ratio = rdiv(a.f, b.f);
-      res = rmul(v, ratio);
-      how = mulText(ratio);
-      if (a.n) {
-        const parts = [];
-        if (a.n.sym !== b.n.sym) parts.push("Zähler " + a.n.sym + " → " + b.n.sym + ": " + mulText(rdiv(a.n.f, b.n.f)));
-        if (a.d.sym !== b.d.sym) parts.push("Nenner " + a.d.sym + " → " + b.d.sym + ": " + mulText(rdiv(b.d.f, a.d.f)));
-        if (parts.length > 1) parts.push("gesamt: " + how);
-        how = parts.join(" · ");
-      }
-    }
+    const { res, how } = convertValue(cat, a, b, v);
     const key = cat.id + a.sym + b.sym + v.join("/");
     if (key === prevKey && tries < 19) continue;
-    return { cat, from: a.sym, to: b.sym, value: fmtRat(v).text, result: fmtRat(res), how, key };
+    return { cat, from: a.sym, to: b.sym, value: fmtRat(v).text, result: fmtRat(res), raw: res, how, key };
   }
   return null;
 }
@@ -345,13 +393,29 @@ const STORE = "einheiten-trainer-v1";
 const STATS = "einheiten-trainer-stats-v1";
 const GOAL = 10;
 const RANKS = [[0, "Neu im Betrieb"], [25, "Probenehmer"], [75, "Anlagenfahrer"], [150, "Schichtführer"], [300, "Meister"], [600, "Betriebsleiter"]];
-const state = { focusCat: "", focusUnit: "", active: new Set(CATS.map((c) => c.id)), prevKey: "", current: null, rated: false, timer: 0, toastTimer: 0, resetTimer: 0 };
+const state = { focusCat: "", focusUnit: "", active: new Set(CATS.map((c) => c.id)), prevKey: "", task: null, revealed: false, userActed: false, toastTimer: 0, resetTimer: 0 };
+const BAD_NUMBER = "Bitte nur eine Zahl eingeben (Komma oder Punkt als Dezimalzeichen).";
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text != null) e.textContent = text;
   return e;
+}
+
+/* --- Zahleneingabe: Komma/Punkt, Leerzeichen, Minus, 1e3 --- */
+function parseAnswer(str) {
+  let t = String(str).replace(/[\s  ]/g, "").replace(/−/g, "-");
+  if (/^-?[1-9]\d{0,2}(\.\d{3}){2,}(,\d+)?$/.test(t)) t = t.replace(/\./g, "");
+  t = t.replace(/,/g, ".").replace(/\.(?=e|$)/i, "");
+  const m = /^-?(\d+\.?\d*|\.\d+)(?:e(-?\d+))?$/i.exec(t);
+  if (!m || t.length > 40 || (m[2] && Math.abs(parseInt(m[2], 10)) > 30)) return null;
+  try { return parseDec(t); } catch (e) { return null; }
+}
+const sameRat = (x, y) => x[0] * y[1] === y[0] * x[1];
+function closeRat(x, y) { // innerhalb 1 %
+  const d = rsub(x, y), nd = d[0] < 0n ? -d[0] : d[0], ny = y[0] < 0n ? -y[0] : y[0];
+  return nd * 100n * y[1] <= ny * d[1];
 }
 
 /* --- Einstellungen --- */
@@ -423,7 +487,7 @@ function renderProgress(ri) {
   box.append(head, bar, el("div", "note", next ? "Noch " + (next[0] - stats.right) + " richtige Aufgaben bis „" + next[1] + "“" : "Höchster Rang erreicht"));
   const rows = CATS.filter((c) => stats.cat[c.id] && stats.cat[c.id].r + stats.cat[c.id].w > 0)
     .sort((a, b) => acc(a) - acc(b) || (stats.cat[b.id].r + stats.cat[b.id].w) - (stats.cat[a.id].r + stats.cat[a.id].w));
-  if (!rows.length) { box.append(el("div", "note", "Noch keine bewerteten Aufgaben. Decke das Ergebnis auf und bewerte, ob du es gewusst hast.")); return; }
+  if (!rows.length) { box.append(el("div", "note", "Noch keine gewerteten Aufgaben. Gib eine Antwort ein und decke die Lösung auf.")); return; }
   box.append(el("div", "note", "Trefferquote je Größe, schwächste zuerst"));
   for (const c of rows) {
     const s = stats.cat[c.id], a = acc(c), row = el("div", "prow");
@@ -441,23 +505,18 @@ function toast(msg) {
   state.toastTimer = setTimeout(() => { $("toast").textContent = ""; }, 3200);
 }
 
-function rate(ok) {
-  if ($("rOk").disabled) return;
-  const id = state.current.id, rankBefore = rankIdx(stats.right);
+function record(ok, id) {
+  const rankBefore = rankIdx(stats.right);
   const cs = stats.cat[id] || (stats.cat[id] = { r: 0, w: 0 });
   if (ok) { stats.right++; cs.r++; stats.streak++; stats.best = Math.max(stats.best, stats.streak); }
   else { stats.wrong++; cs.w++; stats.streak = 0; }
   const k = dayKey(new Date());
   stats.days[k] = (stats.days[k] || 0) + 1;
-  state.rated = true;
   saveStats(); renderStats();
-  $("answer").classList.add(ok ? "ok" : "no");
-  syncRate();
   const rankAfter = rankIdx(stats.right);
   if (rankAfter > rankBefore) toast("Neuer Rang: " + RANKS[rankAfter][1]);
   else if (stats.days[k] === GOAL) toast("Tagesziel erreicht: " + GOAL + " Aufgaben heute");
   else if (ok && stats.streak % 5 === 0) toast(stats.streak + " richtig in Folge");
-  state.timer = setTimeout(newTask, 650);
 }
 
 /* --- Aufgaben --- */
@@ -503,25 +562,25 @@ function renderFocus() {
   }
 }
 
-function syncRate() {
-  const can = !!state.current && !state.rated && $("answer").classList.contains("open");
-  $("rOk").disabled = $("rNo").disabled = !can;
+function updateCover() {
+  $("coverTxt").textContent = $("answer").disabled ? "Erst deine Antwort eingeben" : "Zum Aufdecken tippen";
 }
-function setOpen(open) {
-  const a = $("answer");
-  a.classList.toggle("open", open);
-  a.setAttribute("aria-pressed", String(open));
-  syncRate();
+
+function onInput() {
+  if (state.revealed) return;
+  const v = $("inp").value, x = parseAnswer(v);
+  $("answer").disabled = !x;
+  $("inHint").textContent = v.trim() && !x && !/^[-−]?[.,]?$/.test(v.trim()) ? BAD_NUMBER : "";
+  updateCover();
 }
 
 function newTask() {
-  clearTimeout(state.timer);
   const focus = CATS.find((c) => c.id === state.focusCat);
   const cats = focus ? [focus] : usableCats();
   const view = $("taskView");
   if (!cats.length) {
     view.style.display = "none"; $("empty").style.display = "block"; $("next").disabled = true;
-    state.current = null;
+    state.task = null;
     return;
   }
   view.style.display = ""; $("empty").style.display = "none"; $("next").disabled = false;
@@ -529,33 +588,108 @@ function newTask() {
   const t = makeTask(cat, state.prevKey, focus ? state.focusUnit : "");
   if (!t) return;
   state.prevKey = t.key;
+  state.task = t;
+  state.revealed = false;
   $("tag").textContent = t.cat.name;
   $("given").textContent = "";
-  const u = el("span", "u", t.from);
-  $("given").append(document.createTextNode(t.value + " "), u);
+  $("given").append(document.createTextNode(t.value + " "), el("span", "u", t.from));
   $("target").textContent = "";
   $("target").append("Rechne um in ", el("b", null, t.to));
   $("res").textContent = "";
   $("res").append((t.result.exact ? "" : "≈ ") + t.result.text, el("small", null, t.to));
   $("how").textContent = "Rechenschritt: " + t.how + (t.result.exact ? "" : " (gerundet auf 4 gültige Stellen)");
-  state.current = t.cat;
-  state.rated = false;
-  $("answer").classList.remove("ok", "no");
-  setOpen(false);
+  $("verdict").textContent = "";
+  $("inUnit").textContent = t.to;
+  const inp = $("inp");
+  inp.value = ""; inp.disabled = false;
+  inp.setAttribute("inputmode", t.cat.special === "temp" ? "text" : "decimal");
+  $("inHint").textContent = "";
+  const a = $("answer");
+  a.classList.remove("open", "ok", "no");
+  a.disabled = true;
+  updateCover();
+  if (state.userActed && !$("practice").hidden) inp.focus();
+}
+
+function reveal() {
+  const t = state.task;
+  if (!t || state.revealed) return;
+  const x = parseAnswer($("inp").value);
+  if (!x) return;
+  const ok = t.result.exact ? sameRat(x, t.raw) : closeRat(x, t.raw);
+  state.revealed = true;
+  $("verdict").textContent = ok ? "Richtig" : "Nicht richtig · deine Antwort: " + $("inp").value.trim();
+  $("answer").classList.add("open", ok ? "ok" : "no");
+  $("inp").disabled = true;
+  $("inHint").textContent = "";
+  record(ok, t.cat.id);
+  $("next").focus();
+}
+
+/* --- Eigene Zahl (Umrechner) --- */
+const calcCat = () => CATS.find((c) => c.id === $("cCat").value) || CATS[0];
+function fillCalcUnits() {
+  const cat = calcCat();
+  for (const id of ["cFrom", "cTo"]) {
+    const sel = $(id);
+    sel.textContent = "";
+    for (const u of cat.u) sel.append(new Option(u.sym, u.sym));
+  }
+  $("cFrom").value = cat.u[0].sym;
+  $("cTo").value = cat.u[Math.min(1, cat.u.length - 1)].sym;
+  $("cNum").setAttribute("inputmode", cat.special === "temp" ? "text" : "decimal");
+}
+function calcUpdate() {
+  const cat = calcCat();
+  const a = cat.u.find((u) => u.sym === $("cFrom").value), b = cat.u.find((u) => u.sym === $("cTo").value);
+  const raw = $("cNum").value, x = parseAnswer(raw);
+  if (!a || !b || !x) {
+    $("cEq").textContent = "";
+    $("cRes").textContent = "–";
+    $("cHow").textContent = raw.trim() && !/^[-−]?[.,]?$/.test(raw.trim()) ? BAD_NUMBER : "Zahl eingeben und Einheiten wählen. Das Ergebnis erscheint sofort.";
+    return;
+  }
+  const { res, how } = convertValue(cat, a, b, x), f = fmtRat(res);
+  $("cEq").textContent = fmtRat(x).text + " " + a.sym + " =";
+  $("cRes").textContent = "";
+  $("cRes").append((f.exact ? "" : "≈ ") + f.text, el("small", null, b.sym));
+  $("cHow").textContent = "Rechenschritt: " + how + (f.exact ? "" : " (gerundet auf 4 gültige Stellen)");
+}
+
+function showTab(name) {
+  const calc = name === "calc";
+  $("practice").hidden = calc;
+  $("calc").hidden = !calc;
+  $("tabPractice").classList.toggle("on", !calc);
+  $("tabCalc").classList.toggle("on", calc);
+  $("tabPractice").setAttribute("aria-pressed", String(!calc));
+  $("tabCalc").setAttribute("aria-pressed", String(calc));
 }
 
 /* --- Start --- */
 function init() {
   load();
   loadStats();
-  $("answer").addEventListener("click", () => setOpen(!$("answer").classList.contains("open")));
+  ["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, () => { state.userActed = true; }, { capture: true, once: true }));
+
+  $("inp").addEventListener("input", onInput);
+  $("inp").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); reveal(); } });
+  $("answer").addEventListener("click", reveal);
   $("next").addEventListener("click", newTask);
-  $("rOk").addEventListener("click", () => rate(true));
-  $("rNo").addEventListener("click", () => rate(false));
   $("selAll").addEventListener("click", () => { CATS.forEach((c) => state.active.add(c.id)); save(); renderChips(); newTask(); });
   $("selNone").addEventListener("click", () => { state.active.clear(); save(); renderChips(); newTask(); });
   $("focusCat").addEventListener("change", (e) => { state.focusCat = e.target.value; state.focusUnit = ""; save(); renderFocus(); newTask(); });
   $("focusUnit").addEventListener("change", (e) => { state.focusUnit = e.target.value; save(); newTask(); });
+
+  $("tabPractice").addEventListener("click", () => showTab("practice"));
+  $("tabCalc").addEventListener("click", () => { showTab("calc"); $("cNum").focus(); });
+  for (const c of CATS) $("cCat").append(new Option(c.name, c.id));
+  fillCalcUnits(); calcUpdate();
+  $("cCat").addEventListener("change", () => { fillCalcUnits(); calcUpdate(); });
+  $("cFrom").addEventListener("change", calcUpdate);
+  $("cTo").addEventListener("change", calcUpdate);
+  $("cNum").addEventListener("input", calcUpdate);
+  $("cSwap").addEventListener("click", () => { const f = $("cFrom").value; $("cFrom").value = $("cTo").value; $("cTo").value = f; calcUpdate(); });
 
   $("exp").addEventListener("click", () => {
     const blob = new Blob([JSON.stringify({ app: "einheiten-trainer", version: 1, stats }, null, 2)], { type: "application/json" });
@@ -590,15 +724,10 @@ function init() {
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || $("practice").hidden || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
     const k = e.key.toLowerCase();
     if (k === "n") newTask();
-    else if (k === "r") rate(true);
-    else if (k === "f") rate(false);
-    else if ((k === " " || k === "enter") && document.activeElement === document.body && state.current) {
-      e.preventDefault();
-      setOpen(!$("answer").classList.contains("open"));
-    }
+    else if (k === "enter" && state.revealed && document.activeElement === document.body) newTask();
   });
 
   renderFocus();
